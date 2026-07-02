@@ -1,0 +1,30 @@
+# Secrets
+.env
+.env.*
+!.env.example
+**/*.key
+mnemonic.txt
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+
+# Rust
+target/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Supabase local
+supabase/.temp/
+supabase/.branches/
+.claude/settings.local.json
+
+# Local clone of Polymarket/polymarket-cli with local patches (agent feature gate).
+# Built locally to target/release/polymarket -- not part of this repo.
+polia/polymarket-cli/

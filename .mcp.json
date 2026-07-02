@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--read-only",
+        "--project-ref=${SUPABASE_PROJECT_REF}"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
+      }
+    },
+    "blockscout": {
+      "type": "http",
+      "url": "https://mcp.blockscout.com/mcp",
+      "headers": {
+        "Blockscout-MCP-Pro-Api-Key": "${BLOCKSCOUT_PRO_API_KEY}"
+      }
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "vercel": {
+      "type": "http",
+      "url": "https://mcp.vercel.com"
+    }
+  }
+}

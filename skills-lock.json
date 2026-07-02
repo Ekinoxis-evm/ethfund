@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "skills": {
+    "polymarket-cli": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/polymarket-cli/SKILL.md"
+    },
+    "arbitrage-scanner": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/arbitrage-scanner/SKILL.md"
+    },
+    "resend": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/resend/SKILL.md",
+      "upstream": "resend/resend-node (SDK) — https://resend.com/docs"
+    },
+    "blockscout": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/blockscout/SKILL.md",
+      "upstream": "Blockscout MCP — https://mcp.blockscout.com/mcp"
+    },
+    "supabase": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/supabase/SKILL.md",
+      "upstream": "supabase/agent-skills (npx skills add supabase/agent-skills)"
+    },
+    "vercel-cli": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/vercel-cli/SKILL.md",
+      "upstream": "vercel-labs/agent-skills; bundled vercel:* plugin skills; CLI via `npx vercel@latest`"
+    }
+  }
+}
