@@ -76,6 +76,12 @@ export async function fetchEthUpDown(opts?: { pages?: number; pageSize?: number 
   return out;
 }
 
+/** Debug: full raw Gamma objects for a few ETH Up/Down markets (caller must be bearer-gated). */
+export async function fetchRawEthSamples(count = 4): Promise<RawMarket[]> {
+  const raw = await fetchRaw({ pages: 2 });
+  return raw.filter(isEthUpDown).slice(0, count);
+}
+
 /** Diagnostics: what Gamma returns vs what the ETH-Up/Down filter + duration parser match. */
 export async function diagnose(opts?: { pages?: number; pageSize?: number }): Promise<{
   rawCount: number;

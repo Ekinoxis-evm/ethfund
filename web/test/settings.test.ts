@@ -15,7 +15,9 @@ test("session round-trip verifies", () => {
 
 test("tampered session is rejected", () => {
   const { value } = signSession();
-  const [expires, sig] = value.split(".");
+  const dot = value.indexOf(".");
+  const expires = value.slice(0, dot);
+  const sig = value.slice(dot + 1);
   const flipped = sig.slice(0, -1) + (sig.endsWith("0") ? "1" : "0");
   assert.equal(verifySession(`${expires}.${flipped}`), false);
   // extending expiry without re-signing must fail too
@@ -68,11 +70,11 @@ test("validateSettingsInput rejects bad values with per-field errors", () => {
   });
   assert.equal(result.ok, false);
   if (!result.ok) {
-    assert.match(result.errors.minSpread, /between/);
-    assert.match(result.errors.minLiquidity, /number/);
-    assert.match(result.errors.minVolume, /between/);
+    assert.match(result.errors.minSpread ?? "", /between/);
+    assert.match(result.errors.minLiquidity ?? "", /number/);
+    assert.match(result.errors.minVolume ?? "", /between/);
     assert.equal(result.errors.maxBidAsk, undefined);
-    assert.match(result.errors.pairs, /bogus/);
+    assert.match(result.errors.pairs ?? "", /bogus/);
   }
 });
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { serverConfig } from "@/lib/config";
-import { fetchEthUpDown, diagnose } from "@/lib/polymarket/gamma";
+import { fetchEthUpDown, diagnose, fetchRawEthSamples } from "@/lib/polymarket/gamma";
 import { groupByExpiry } from "@/lib/polymarket/markets";
 import { evaluateGroup, type Evaluation } from "@/lib/polymarket/arbitrage";
 import {
@@ -70,6 +70,13 @@ async function runScan(): Promise<ScanRunStats> {
 export async function GET(req: Request) {
   if (!authorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  if (new URL(req.url).searchParams.get("raw") === "1") {
+    try {
+      return NextResponse.json({ ok: true, samples: await fetchRawEthSamples(4) });
+    } catch (err) {
+      return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : String(err) });
+    }
   }
   if (new URL(req.url).searchParams.get("debug") === "1") {
     try {
