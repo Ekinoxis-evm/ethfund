@@ -8,7 +8,12 @@ The full functional spec is `polia/Scanner de Arbitraje Temporal para Polymarket
 
 ## Live deployment
 
+- **Repo:** https://github.com/Ekinoxis-evm/ethfund — connected to Vercel (root directory `web`);
+  pushes to `main` auto-deploy to production. The Rust CLI (`polia/polymarket-cli`) is a local
+  clone with local patches and is gitignored — not part of the GitHub repo.
 - **Dashboard:** https://ethfund.vercel.app (Vercel, team `ekinoxis-team`, project `ethfund`). Source in `web/`.
+  `/settings` (admin passcode) edits scanner thresholds live — stored in Supabase `scanner_settings`,
+  audited in `settings_changes`, applied on the next scan tick; env vars are the fallback.
 - **Scanner endpoint:** `GET /api/scan` (fra1, `runtime=nodejs`) — fetches Polymarket Gamma over HTTP,
   evaluates, writes Supabase, emails via Resend. Gated by `Authorization: Bearer $CRON_SECRET`.
 - **Cadence:** driven by **Supabase pg_cron** — job `ethfund-scan` (`* * * * *`) on the creditline
