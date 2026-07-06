@@ -12,6 +12,8 @@ export interface RawMarket {
   conditionId?: string;
   endDate?: string;
   startDate?: string;
+  /** When the market's price window opens — the "price to beat" is the ETH price at this instant. */
+  eventStartTime?: string;
   active?: boolean;
   closed?: boolean;
   acceptingOrders?: boolean;
@@ -35,6 +37,8 @@ export interface Market {
   duration: Duration;
   expiryAt: Date;
   expiryKey: string;
+  /** Window start (from Gamma eventStartTime); undefined when Gamma omits it. */
+  startAt?: Date;
   yes: number;
   no: number;
   yesTokenId?: string;
@@ -127,6 +131,12 @@ export function normalize(m: RawMarket): Market | null {
 
   const open = (m.active ?? true) && !(m.closed ?? false) && (m.acceptingOrders ?? true);
 
+  let startAt: Date | undefined;
+  if (m.eventStartTime) {
+    const d = new Date(m.eventStartTime);
+    if (!Number.isNaN(d.getTime())) startAt = d;
+  }
+
   return {
     id: m.id,
     slug: m.slug ?? m.id,
@@ -134,6 +144,7 @@ export function normalize(m: RawMarket): Market | null {
     duration,
     expiryAt,
     expiryKey: minuteKey(expiryAt),
+    startAt,
     yes,
     no,
     yesTokenId: tokenIds[yi],

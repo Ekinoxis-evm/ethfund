@@ -52,6 +52,12 @@ export interface MarketItem {
   timeRemainingSec: number;
   open: boolean;
   url: string;
+  /** Window start (ISO); the market resolves UP iff ETH ends >= its price at this instant. */
+  startAt: string | null;
+  /** ETH price at window start (Pyth, display-grade). Null if window not started / unavailable. */
+  priceToBeat: number | null;
+  /** Live spot minus priceToBeat — how far ETH is above (+) or below (−) the strike right now. */
+  priceDiff: number | null;
 }
 
 export interface PairItem {
@@ -64,6 +70,8 @@ export interface PairItem {
   bidask: number | null;
   ok: boolean;
   reasons: string[];
+  /** Gap between the two markets' strikes (priceToBeat A − B), USD. The spread should reflect this. */
+  strikeDiff: number | null;
 }
 
 export interface MarketsGroup {
@@ -74,6 +82,8 @@ export interface MarketsGroup {
 
 export interface MarketsResponse {
   generatedAt: string;
+  /** Live ETH/USD spot (Pyth, display-grade). */
+  ethSpot: number | null;
   thresholds: {
     minSpread: number;
     minLiquidity: number;

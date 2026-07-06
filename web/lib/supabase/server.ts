@@ -160,8 +160,17 @@ export async function listSettingsChanges(limit = 50): Promise<SettingsChangeRow
 
 const MAX_SNAPSHOTS_PER_TICK = 100;
 
+export interface StrikeContext {
+  /** marketId → ETH price at that market's window start ("price to beat"). */
+  strikes: Map<string, number>;
+  ethSpot: number | null;
+}
+
 /** Batch-insert one row per compared pair. Never throws — history must not break scanning. */
-export async function recordPairSnapshots(evals: Evaluation[]): Promise<number> {
+export async function recordPairSnapshots(
+  evals: Evaluation[],
+  ctx?: StrikeContext,
+): Promise<number> {
   if (!dbConfigured() || !evals.length) return 0;
   const rows = evals.slice(0, MAX_SNAPSHOTS_PER_TICK).map(({ opp, isOpportunity, reasons }) => ({
     pair: opp.pair,
@@ -175,6 +184,9 @@ export async function recordPairSnapshots(evals: Evaluation[]): Promise<number> 
     volume_usd: opp.volume_usd,
     passed: isOpportunity,
     reasons,
+    price_to_beat_a: ctx?.strikes.get(opp.market_a_id) ?? null,
+    price_to_beat_b: ctx?.strikes.get(opp.market_b_id) ?? null,
+    eth_spot: ctx?.ethSpot ?? null,
   }));
   try {
     const { error } = await serviceClient().from("pair_snapshots").insert(rows);

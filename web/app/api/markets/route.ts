@@ -3,6 +3,7 @@ import { loadThresholds } from "@/lib/settings";
 import { fetchEthUpDown } from "@/lib/polymarket/gamma";
 import { groupByExpiry, type Market } from "@/lib/polymarket/markets";
 import { evaluateGroup } from "@/lib/polymarket/arbitrage";
+import { ethSpot, strikesFor } from "@/lib/polymarket/pyth";
 import type { MarketItem, MarketsGroup, MarketsResponse, PairItem } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -14,7 +15,13 @@ export const preferredRegion = "fra1";
 const CACHE_TTL_MS = 15_000;
 let cache: { at: number; payload: MarketsResponse } | null = null;
 
-function toMarketItem(m: Market, now: number): MarketItem {
+function toMarketItem(
+  m: Market,
+  now: number,
+  strikes: Map<string, number>,
+  spot: number | null,
+): MarketItem {
+  const priceToBeat = strikes.get(m.id) ?? null;
   return {
     id: m.id,
     slug: m.slug,
@@ -28,35 +35,48 @@ function toMarketItem(m: Market, now: number): MarketItem {
     timeRemainingSec: Math.max(0, Math.round((m.expiryAt.getTime() - now) / 1000)),
     open: m.open,
     url: `https://polymarket.com/market/${m.slug}`,
+    startAt: m.startAt ? m.startAt.toISOString() : null,
+    priceToBeat,
+    priceDiff: priceToBeat !== null && spot !== null ? spot - priceToBeat : null,
   };
 }
 
 async function buildResponse(): Promise<MarketsResponse> {
   const now = Date.now();
-  const [markets, thresholds] = await Promise.all([fetchEthUpDown(), loadThresholds()]);
+  const [markets, thresholds, spot] = await Promise.all([
+    fetchEthUpDown(),
+    loadThresholds(),
+    ethSpot(),
+  ]);
+  const strikes = await strikesFor(markets);
   const groups = groupByExpiry(markets);
 
   const out: MarketsGroup[] = [];
   for (const [expiryKey, group] of groups) {
     const pairs: PairItem[] = evaluateGroup(group, thresholds, now).map(
-      ({ opp, isOpportunity, reasons }) => ({
-        pair: opp.pair,
-        yesSpread: opp.yes_spread,
-        noSpread: opp.no_spread,
-        spread: Math.max(opp.yes_spread, opp.no_spread),
-        liq: opp.liquidity_usd,
-        vol: opp.volume_usd,
-        bidask: Number.isFinite(opp.best_bid_ask_spread) ? opp.best_bid_ask_spread : null,
-        ok: isOpportunity,
-        reasons,
-      }),
+      ({ opp, isOpportunity, reasons }) => {
+        const strikeA = strikes.get(opp.market_a_id);
+        const strikeB = strikes.get(opp.market_b_id);
+        return {
+          pair: opp.pair,
+          yesSpread: opp.yes_spread,
+          noSpread: opp.no_spread,
+          spread: Math.max(opp.yes_spread, opp.no_spread),
+          liq: opp.liquidity_usd,
+          vol: opp.volume_usd,
+          bidask: Number.isFinite(opp.best_bid_ask_spread) ? opp.best_bid_ask_spread : null,
+          ok: isOpportunity,
+          reasons,
+          strikeDiff: strikeA !== undefined && strikeB !== undefined ? strikeA - strikeB : null,
+        };
+      },
     );
     out.push({
       expiryAt: expiryKey,
       markets: group
         .slice()
         .sort((a, b) => a.duration.localeCompare(b.duration))
-        .map((m) => toMarketItem(m, now)),
+        .map((m) => toMarketItem(m, now, strikes, spot)),
       pairs,
     });
   }
@@ -64,6 +84,7 @@ async function buildResponse(): Promise<MarketsResponse> {
 
   return {
     generatedAt: new Date(now).toISOString(),
+    ethSpot: spot,
     thresholds: {
       minSpread: thresholds.minSpread,
       minLiquidity: thresholds.minLiquidity,

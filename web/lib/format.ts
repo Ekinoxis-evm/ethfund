@@ -8,6 +8,19 @@ export function usd(x: number | null | undefined): string {
   return `$${Math.round(x).toLocaleString("en-US")}`;
 }
 
+/** USD with cents — for ETH prices and strike gaps where dollars matter. */
+export function usd2(x: number | null | undefined): string {
+  if (x === null || x === undefined) return "—";
+  return `$${x.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** Signed USD with cents — for price differences (+$2.13 / −$1.05). */
+export function usdSigned(x: number | null | undefined): string {
+  if (x === null || x === undefined) return "—";
+  const sign = x > 0 ? "+" : x < 0 ? "−" : "";
+  return `${sign}$${Math.abs(x).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export function remaining(sec: number | null | undefined): string {
   if (sec === null || sec === undefined) return "—";
   if (sec <= 0) return "expired";

@@ -13,6 +13,7 @@ import {
 } from "@/lib/supabase/server";
 import { sendAlert } from "@/lib/resend";
 import { loadThresholds } from "@/lib/settings";
+import { ethSpot, strikesFor } from "@/lib/polymarket/pyth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,7 +44,15 @@ async function runScan(): Promise<ScanRunStats> {
   const opportunities = allEvals.filter((e) => e.isOpportunity);
 
   const persist = dbConfigured();
-  if (persist) await recordPairSnapshots(allEvals); // never throws — history must not break alerting
+  if (persist && allEvals.length) {
+    // Strike context (Pyth) is best-effort — snapshots write with nulls if it fails.
+    const compared = new Set(allEvals.flatMap((e) => [e.opp.market_a_id, e.opp.market_b_id]));
+    const [strikes, spot] = await Promise.all([
+      strikesFor(markets.filter((m) => compared.has(m.id))),
+      ethSpot(),
+    ]);
+    await recordPairSnapshots(allEvals, { strikes, ethSpot: spot }); // never throws
+  }
   for (const { opp } of opportunities) {
     if (!persist) continue;
     const { alreadyAlerted } = await upsertOpportunity(opp);

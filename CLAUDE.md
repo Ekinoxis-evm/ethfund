@@ -29,6 +29,16 @@ The full functional spec is `polia/Scanner de Arbitraje Temporal para Polymarket
 
 Polymarket runs several ETH Up/Down markets in parallel (4H, Hourly, 15M, 5M), each with its own start time and **Price To Beat**. At certain moments two of them **end at the same wall-clock time** (e.g. the 12:00→16:00 4H market and the 15:00→16:00 1H market both resolve at 16:00). During that overlap both markets depend on essentially the same remaining ETH move, so their probabilities **should converge** — when they don't, there's a temporary inefficiency. The scanner only ever **compares markets inside the same expiry group**.
 
+**Strike-awareness (Jul 2026 upgrade — keep in mind for all future signal work):** each market
+resolves vs *its own* Price To Beat (Chainlink ETH/USD at its `eventStartTime`), and same-expiry
+markets have different strikes (~$1–2 apart), so raw probability spreads partly reflect the strike
+gap — not pure mispricing. Perfect convergence never happens. Gamma doesn't expose the strike value;
+we compute it via **Pyth Hermes** (`web/lib/polymarket/pyth.ts`: historical price at timestamp, live
+spot — public, keyless, display-grade vs Chainlink resolution). Strikes + spot are persisted per
+scan tick in `pair_snapshots.price_to_beat_a/b`, `eth_spot` (migration 0004), shown on the dashboard
+markets table (price to beat, price diff, strike gap per pair), and returned by `/api/markets`.
+Future opportunity logic must weigh spread against strike gap + remaining time, not raw spread alone.
+
 Comparisons (spec §7): **4H vs 1H** (when 1h remains) · **1H vs 15M** (15m remains) · **15M vs 5M** (5m remains); optional 4H-vs-15M, 4H-vs-5M, 1H-vs-5M. **v1 ships 4H-vs-1H only**; the rest are wired in grouping but gated off.
 
 Alert when (spec §12): same exact expiry ✔ · `max(yesSpread, noSpread) ≥ MIN_SPREAD` ✔ · liquidity ≥ `MIN_LIQUIDITY` ✔ · bid-ask spread ≤ `MAX_BIDASK` ✔ · both markets open ✔. Spreads (spec §11): `yesSpread = |YES_A − YES_B|`, `noSpread = |NO_A − NO_B|`.

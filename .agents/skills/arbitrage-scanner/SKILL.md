@@ -15,6 +15,25 @@ at 16:00). During the overlap both depend on the same remaining ETH move, so the
 should converge — when they don't, there's a temporary, tradeable inefficiency. Never compare markets
 across different expiries.
 
+## Strikes ("price to beat") — the rigidity caveat
+
+**Each market resolves against ITS OWN starting price**, not a shared one: UP iff the Chainlink
+ETH/USD price at window end ≥ the price at that market's `eventStartTime` (Gamma exposes the
+timestamp but **not** the strike value). Two same-expiry markets opened at different times, so their
+strikes differ (e.g. 4H opened at $1,720, 1H at $1,722). A strike gap means their probabilities
+should NOT be equal even with zero inefficiency — a raw probability spread partly reflects the strike
+gap, not mispricing. Perfect convergence never happens; expect ~$1–2 gaps (user feedback, Jul 2026).
+
+**Any future signal logic must be strike-aware**: compare spreads against the strike gap + remaining
+time, don't treat raw spread as pure mispricing. Data available for this:
+
+- `web/lib/polymarket/pyth.ts` — ETH/USD at any past timestamp (`ethPriceAt`), live spot (`ethSpot`),
+  batch per-market strikes (`strikesFor`). Source: Pyth Hermes (public, keyless, works from fra1).
+  Display-grade: resolution uses Chainlink data streams (credentialed) — Pyth tracks within cents.
+- `pair_snapshots.price_to_beat_a/b` + `eth_spot` — strike context persisted every scan tick since
+  migration 0004, for backtesting strike-aware rules.
+- `/api/markets` returns per-market `priceToBeat`/`priceDiff` and per-pair `strikeDiff`.
+
 ## Algorithm (each loop)
 
 1. Fetch active ETH Up/Down markets (`markets search "ETH Up or Down"` / `markets list`).

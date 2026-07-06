@@ -1,7 +1,7 @@
 "use client";
 
 import { useMarkets } from "@/hooks/useMarkets";
-import { expiryLabel, pct, usd } from "@/lib/format";
+import { expiryLabel, pct, usd, usdSigned } from "@/lib/format";
 import type { Thresholds } from "@/lib/config";
 import type { PairItem } from "@/lib/types";
 
@@ -46,8 +46,9 @@ export function LivePairsPreview({ draft }: { draft: Thresholds }) {
           <div>
             <span className="pairname">{p.pair}</span>{" "}
             <span className="field-desc">
-              expires {expiryLabel(expiryAt)} · spread {pct(p.spread)} · liq {usd(p.liq)} · vol{" "}
-              {usd(p.vol)}
+              expires {expiryLabel(expiryAt)} · spread {pct(p.spread)}
+              {p.strikeDiff !== null && <> · strike gap {usdSigned(p.strikeDiff)}</>} · liq{" "}
+              {usd(p.liq)} · vol {usd(p.vol)}
             </span>
             {!verdict.ok && (
               <ul className="reasons">
