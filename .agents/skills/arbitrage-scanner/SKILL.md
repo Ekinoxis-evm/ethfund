@@ -24,6 +24,17 @@ strikes differ (e.g. 4H opened at $1,720, 1H at $1,722). A strike gap means thei
 should NOT be equal even with zero inefficiency — a raw probability spread partly reflects the strike
 gap, not mispricing. Perfect convergence never happens; expect ~$1–2 gaps (user feedback, Jul 2026).
 
+## Overlap windows (spec §7) — when a pair is comparable
+
+A pair is only meaningful during its **overlap window** — the shorter leg's lifetime (4H-vs-1H in
+the 4H market's final hour; 1H-vs-15M in the final 15 min; 15M-vs-5M in the final 5 min). Before the
+shorter leg's `eventStartTime`, its Gamma prices are ~50/50 placeholders and any "spread" is noise.
+The dashboard's **Opportunity radar** encodes this as a status ladder — WAITING (overlap not open;
+shows "live in Xm") → LIVE (verdict `strike-explained` / `UNEXPLAINED` via
+`web/lib/spreadLogic.ts:classifySpread`) → SIGNAL (passes thresholds). Overlap open time = the later
+of the two legs' `startAt`. Convergence per window (spec §17: did the spread close before expiry?)
+is computed from `pair_windows.first_spread/min_spread` via `spreadLogic.ts:convergence`.
+
 **Any future signal logic must be strike-aware**: compare spreads against the strike gap + remaining
 time, don't treat raw spread as pure mispricing. Data available for this:
 

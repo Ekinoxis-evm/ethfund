@@ -14,6 +14,21 @@ const MATERIAL_SPREAD = 0.01;
 /** Strikes closer than this (USD) are treated as the same starting price. */
 const SAME_STRIKE_USD = 0.25;
 
+/** A window's first spread must be at least this to be a convergence candidate. */
+const CONVERGENCE_MATERIAL = 0.03;
+
+export type Convergence = "converged" | "did-not-converge" | "not-applicable";
+
+/**
+ * Did the spread close before expiry? (spec §17 backtesting metric)
+ * Applicable only when the window OPENED with a material spread; converged when
+ * the spread later collapsed to ≤ max(1%, a quarter of its starting value).
+ */
+export function convergence(firstSpread: number, minSpread: number): Convergence {
+  if (firstSpread < CONVERGENCE_MATERIAL) return "not-applicable";
+  return minSpread <= Math.max(0.01, firstSpread * 0.25) ? "converged" : "did-not-converge";
+}
+
 export function classifySpread(
   upA: number,
   upB: number,

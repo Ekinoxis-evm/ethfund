@@ -76,6 +76,8 @@ export interface PairItem {
   durationB: string;
   upA: number;
   upB: number;
+  downA: number;
+  downB: number;
   strikeA: number | null;
   strikeB: number | null;
   slugA: string;
@@ -84,6 +86,9 @@ export interface PairItem {
   /** False while the leg's window hasn't opened — its price is a placeholder, spreads are noise. */
   startedA: boolean;
   startedB: boolean;
+  /** Window start per leg (ISO). The pair's overlap opens at the LATER of the two. */
+  startAtA: string | null;
+  startAtB: string | null;
 }
 
 /** One compared window from history (pair_windows view + resolutions). */
@@ -95,6 +100,11 @@ export interface PairWindowRow {
   samples: number;
   max_spread: number;
   avg_spread: number;
+  first_spread: number;
+  last_spread: number;
+  min_spread: number;
+  first_seen: string;
+  last_seen: string;
   strike_a: number | null;
   strike_b: number | null;
   min_liquidity: number | null;

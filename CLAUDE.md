@@ -38,6 +38,9 @@ spot — public, keyless, display-grade vs Chainlink resolution). Strikes + spot
 scan tick in `pair_snapshots.price_to_beat_a/b`, `eth_spot` (migration 0004), shown on the dashboard
 markets table (price to beat, price diff, strike gap per pair), and returned by `/api/markets`.
 Future opportunity logic must weigh spread against strike gap + remaining time, not raw spread alone.
+A pair is only comparable during its **overlap window** (spec §7 — the shorter leg's lifetime); the
+dashboard's Opportunity radar presents pairs as WAITING → LIVE → SIGNAL, and the `pair_windows` view
+tracks per-window convergence (`first_spread`/`min_spread`, spec §17) for backtesting.
 
 Comparisons (spec §7): **4H vs 1H** (when 1h remains) · **1H vs 15M** (15m remains) · **15M vs 5M** (5m remains); optional 4H-vs-15M, 4H-vs-5M, 1H-vs-5M. **v1 ships 4H-vs-1H only**; the rest are wired in grouping but gated off.
 

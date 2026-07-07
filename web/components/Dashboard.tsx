@@ -8,7 +8,7 @@ import { LiveBadge } from "./LiveBadge";
 import { OpportunityCard } from "./OpportunityCard";
 import { OpportunityTable } from "./OpportunityTable";
 import { Disclaimer } from "./Disclaimer";
-import { LivePairsBoard } from "./markets/LivePairsBoard";
+import { OpportunityRadar } from "./markets/OpportunityRadar";
 import { MarketsTracking } from "./markets/MarketsTracking";
 import { HistoryWindows } from "./markets/HistoryWindows";
 
@@ -54,7 +54,7 @@ export function Dashboard({
         </>
       )}
 
-      <LivePairsBoard data={markets.data} />
+      <OpportunityRadar data={markets.data} />
 
       <MarketsTracking data={markets.data} error={markets.error} loading={markets.loading} />
 

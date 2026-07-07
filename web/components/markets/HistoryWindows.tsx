@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { expiryLabel, pct, usd2, usdSigned } from "@/lib/format";
+import { convergence } from "@/lib/spreadLogic";
 import type { PairWindowRow } from "@/lib/types";
 
 type Payoff = "paid" | "lost" | "unknown";
@@ -13,6 +14,39 @@ function payoff(w: PairWindowRow): Payoff {
   const resolved = cheapIsA ? w.resolved_a : w.resolved_b;
   if (!resolved) return "unknown";
   return resolved === "up" ? "paid" : "lost";
+}
+
+/** Spec §17 metrics, computed over the loaded windows. */
+function StatsStrip({ windows }: { windows: PairWindowRow[] }) {
+  const today = new Date().toDateString();
+  const todayCount = windows.filter((w) => new Date(w.expiry_at).toDateString() === today).length;
+  const avgMax = windows.reduce((s, w) => s + w.max_spread, 0) / windows.length;
+  const biggest = Math.max(...windows.map((w) => w.max_spread));
+  const candidates = windows.filter((w) => convergence(w.first_spread, w.min_spread) !== "not-applicable");
+  const converged = candidates.filter(
+    (w) => convergence(w.first_spread, w.min_spread) === "converged",
+  ).length;
+  const resolvedBoth = windows.filter((w) => w.resolved_a && w.resolved_b);
+  const diverged = resolvedBoth.filter((w) => w.resolved_a !== w.resolved_b).length;
+  return (
+    <div className="controls" style={{ marginBottom: 10 }}>
+      <span className="badge">{todayCount} windows today</span>
+      <span className="badge">avg max-spread {pct(avgMax)}</span>
+      <span className="badge">biggest {pct(biggest)}</span>
+      {candidates.length > 0 && (
+        <span className="badge">
+          converged {converged}/{candidates.length} (
+          {Math.round((converged / candidates.length) * 100)}%)
+        </span>
+      )}
+      {resolvedBoth.length > 0 && (
+        <span className="badge">
+          legs diverged {diverged}/{resolvedBoth.length} (
+          {Math.round((diverged / resolvedBoth.length) * 100)}%)
+        </span>
+      )}
+    </div>
+  );
 }
 
 export function HistoryWindows() {
@@ -60,6 +94,7 @@ export function HistoryWindows() {
       {!error && windows.length === 0 && (
         <div className="empty">No expired windows recorded yet — history builds up as markets close.</div>
       )}
+      {windows.length > 0 && <StatsStrip windows={windows} />}
       {windows.length > 0 && (
         <>
           <div className="controls">
@@ -92,6 +127,8 @@ export function HistoryWindows() {
                   <th>Expired</th>
                   <th>Pair</th>
                   <th className="num">Max spread</th>
+                  <th className="num">First → min</th>
+                  <th>Converged</th>
                   <th className="num">Strike gap</th>
                   <th className="num">ETH at expiry</th>
                   <th>Resolved (A / B)</th>
@@ -105,6 +142,7 @@ export function HistoryWindows() {
                     w.strike_a !== null && w.strike_b !== null ? w.strike_a - w.strike_b : null;
                   const diverged = w.resolved_a && w.resolved_b && w.resolved_a !== w.resolved_b;
                   const pay = payoff(w);
+                  const conv = convergence(w.first_spread, w.min_spread);
                   return (
                     <tr key={`${w.pair}-${w.expiry_at}-${w.market_a_id}`}>
                       <td>{expiryLabel(w.expiry_at)}</td>
@@ -113,6 +151,18 @@ export function HistoryWindows() {
                       </td>
                       <td className="num" style={{ fontWeight: 650 }}>
                         {pct(w.max_spread)}
+                      </td>
+                      <td className="num">
+                        {pct(w.first_spread)} → {pct(w.min_spread)}
+                      </td>
+                      <td>
+                        {conv === "converged" && (
+                          <span style={{ color: "var(--green)" }}>✓ yes</span>
+                        )}
+                        {conv === "did-not-converge" && (
+                          <span style={{ color: "var(--amber)" }}>✗ no</span>
+                        )}
+                        {conv === "not-applicable" && <span className="field-desc">—</span>}
                       </td>
                       <td className="num">{usdSigned(gap)}</td>
                       <td className="num">{usd2(w.eth_at_expiry)}</td>

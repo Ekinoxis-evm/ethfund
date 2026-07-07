@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { signSession, verifySession, checkPasscode } from "../lib/auth";
 import { validateSettingsInput, loadThresholds } from "../lib/settings";
-import { classifySpread } from "../lib/spreadLogic";
+import { classifySpread, convergence } from "../lib/spreadLogic";
 
 // auth.ts reads env lazily (inside each function), so setting these after import is safe.
 process.env.AUTH_SECRET = "test-secret";
@@ -103,6 +103,19 @@ test("classifySpread: strike-consistent spreads are explained", () => {
   assert.equal(classifySpread(0.501, 0.499, 1700, 1800), "explained");
   // Missing strikes with a material spread → unknown.
   assert.equal(classifySpread(0.7, 0.55, null, 1760), "unknown");
+});
+
+test("convergence classification", () => {
+  // Opened at 8%, collapsed to 0.5% → converged.
+  assert.equal(convergence(0.08, 0.005), "converged");
+  // Opened at 8%, never dropped below 6% → did not converge.
+  assert.equal(convergence(0.08, 0.06), "did-not-converge");
+  // Opened at 8%, reached exactly a quarter (2%) → converged (≤ first×0.25).
+  assert.equal(convergence(0.08, 0.02), "converged");
+  // Opened tiny (1%) → nothing to converge.
+  assert.equal(convergence(0.01, 0.0), "not-applicable");
+  // Small-but-material open (4%): floor of 1% applies.
+  assert.equal(convergence(0.04, 0.01), "converged");
 });
 
 test("loadThresholds falls back to env when the DB is not configured", async () => {

@@ -56,6 +56,7 @@ async function buildResponse(): Promise<MarketsResponse> {
     const startedById = new Map(
       group.map((m) => [m.id, m.startAt === undefined || m.startAt.getTime() <= now]),
     );
+    const startAtById = new Map(group.map((m) => [m.id, m.startAt?.toISOString() ?? null]));
     const pairs: PairItem[] = evaluateGroup(group, thresholds, now).map(
       ({ opp, isOpportunity, reasons }) => {
         const strikeA = strikes.get(opp.market_a_id) ?? null;
@@ -75,6 +76,8 @@ async function buildResponse(): Promise<MarketsResponse> {
           durationB: opp.duration_b,
           upA: opp.yes_a,
           upB: opp.yes_b,
+          downA: opp.no_a,
+          downB: opp.no_b,
           strikeA,
           strikeB,
           slugA: opp.market_a_slug,
@@ -82,6 +85,8 @@ async function buildResponse(): Promise<MarketsResponse> {
           timeRemainingSec: opp.time_remaining_sec,
           startedA: startedById.get(opp.market_a_id) ?? true,
           startedB: startedById.get(opp.market_b_id) ?? true,
+          startAtA: startAtById.get(opp.market_a_id) ?? null,
+          startAtB: startAtById.get(opp.market_b_id) ?? null,
         };
       },
     );

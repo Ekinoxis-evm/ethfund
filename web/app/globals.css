@@ -138,6 +138,15 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .checkrow .pairname { font-weight: 600; }
 .reasons { margin: 4px 0 0; padding-left: 18px; font-size: 12px; color: var(--muted); }
 .reasons li { line-height: 1.5; }
+.probbar {
+  display: inline-block; width: 60px; height: 8px; border-radius: 4px;
+  background: rgba(245,158,11,0.35); overflow: hidden; vertical-align: middle; margin-right: 8px;
+}
+.probbar .up { display: block; height: 100%; background: var(--green); }
+tr.grouprow td {
+  background: var(--panel); font-weight: 650; font-size: 13px;
+  border-top: 2px solid var(--border);
+}
 .topbar .nav { display: flex; gap: 10px; align-items: center; }
 .topbar .nav a { color: var(--muted); font-size: 13px; text-decoration: none; border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; }
 .topbar .nav a:hover { border-color: var(--accent); color: var(--text); }
