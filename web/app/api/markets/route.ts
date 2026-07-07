@@ -55,8 +55,8 @@ async function buildResponse(): Promise<MarketsResponse> {
   for (const [expiryKey, group] of groups) {
     const pairs: PairItem[] = evaluateGroup(group, thresholds, now).map(
       ({ opp, isOpportunity, reasons }) => {
-        const strikeA = strikes.get(opp.market_a_id);
-        const strikeB = strikes.get(opp.market_b_id);
+        const strikeA = strikes.get(opp.market_a_id) ?? null;
+        const strikeB = strikes.get(opp.market_b_id) ?? null;
         return {
           pair: opp.pair,
           yesSpread: opp.yes_spread,
@@ -67,7 +67,16 @@ async function buildResponse(): Promise<MarketsResponse> {
           bidask: Number.isFinite(opp.best_bid_ask_spread) ? opp.best_bid_ask_spread : null,
           ok: isOpportunity,
           reasons,
-          strikeDiff: strikeA !== undefined && strikeB !== undefined ? strikeA - strikeB : null,
+          strikeDiff: strikeA !== null && strikeB !== null ? strikeA - strikeB : null,
+          durationA: opp.duration_a,
+          durationB: opp.duration_b,
+          upA: opp.yes_a,
+          upB: opp.yes_b,
+          strikeA,
+          strikeB,
+          slugA: opp.market_a_slug,
+          slugB: opp.market_b_slug,
+          timeRemainingSec: opp.time_remaining_sec,
         };
       },
     );

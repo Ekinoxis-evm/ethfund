@@ -72,6 +72,35 @@ export interface PairItem {
   reasons: string[];
   /** Gap between the two markets' strikes (priceToBeat A − B), USD. The spread should reflect this. */
   strikeDiff: number | null;
+  durationA: string;
+  durationB: string;
+  upA: number;
+  upB: number;
+  strikeA: number | null;
+  strikeB: number | null;
+  slugA: string;
+  slugB: string;
+  timeRemainingSec: number;
+}
+
+/** One compared window from history (pair_windows view + resolutions). */
+export interface PairWindowRow {
+  pair: string;
+  expiry_at: string;
+  market_a_id: string;
+  market_b_id: string;
+  samples: number;
+  max_spread: number;
+  avg_spread: number;
+  strike_a: number | null;
+  strike_b: number | null;
+  min_liquidity: number | null;
+  last_up_a: number | null;
+  last_up_b: number | null;
+  ever_passed: boolean;
+  resolved_a: "up" | "down" | null;
+  resolved_b: "up" | "down" | null;
+  eth_at_expiry: number | null;
 }
 
 export interface MarketsGroup {

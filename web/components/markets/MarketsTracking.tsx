@@ -1,10 +1,11 @@
 "use client";
 
-import { useMarkets } from "@/hooks/useMarkets";
+import { useState } from "react";
 import { expiryLabel, pct, remaining, usd, usd2, usdSigned } from "@/lib/format";
-import type { MarketsGroup } from "@/lib/types";
+import type { MarketsGroup, MarketsResponse } from "@/lib/types";
 
 function GroupBlock({ group, ethSpot }: { group: MarketsGroup; ethSpot: number | null }) {
+  const now = Date.now();
   return (
     <div>
       <div className="grouphead">
@@ -31,34 +32,44 @@ function GroupBlock({ group, ethSpot }: { group: MarketsGroup; ethSpot: number |
             </tr>
           </thead>
           <tbody>
-            {group.markets.map((m) => (
-              <tr key={m.id}>
-                <td>{m.question}</td>
-                <td>ETH</td>
-                <td>
-                  <span className="badge">{m.duration}</span>
-                </td>
-                <td className="num">{pct(m.no)}</td>
-                <td className="num">{pct(m.yes)}</td>
-                <td className="num">{usd2(m.priceToBeat)}</td>
-                <td
-                  className="num"
-                  style={
-                    m.priceDiff === null
-                      ? undefined
-                      : { color: m.priceDiff >= 0 ? "var(--green)" : "var(--amber)" }
-                  }
-                >
-                  {usdSigned(m.priceDiff)}
-                </td>
-                <td className="num">{remaining(m.timeRemainingSec)}</td>
-                <td>
-                  <a href={m.url} target="_blank" rel="noreferrer">
-                    Open ↗
-                  </a>
-                </td>
-              </tr>
-            ))}
+            {group.markets.map((m) => {
+              const preStart = m.startAt !== null && new Date(m.startAt).getTime() > now;
+              return (
+                <tr key={m.id} style={preStart ? { opacity: 0.55 } : undefined}>
+                  <td>
+                    {m.question}
+                    {preStart && (
+                      <span className="badge" style={{ marginLeft: 6 }}>
+                        not started
+                      </span>
+                    )}
+                  </td>
+                  <td>ETH</td>
+                  <td>
+                    <span className="badge">{m.duration}</span>
+                  </td>
+                  <td className="num">{pct(m.no)}</td>
+                  <td className="num">{pct(m.yes)}</td>
+                  <td className="num">{usd2(m.priceToBeat)}</td>
+                  <td
+                    className="num"
+                    style={
+                      m.priceDiff === null
+                        ? undefined
+                        : { color: m.priceDiff >= 0 ? "var(--green)" : "var(--amber)" }
+                    }
+                  >
+                    {usdSigned(m.priceDiff)}
+                  </td>
+                  <td className="num">{remaining(m.timeRemainingSec)}</td>
+                  <td>
+                    <a href={m.url} target="_blank" rel="noreferrer">
+                      Open ↗
+                    </a>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -92,8 +103,21 @@ function GroupBlock({ group, ethSpot }: { group: MarketsGroup; ethSpot: number |
   );
 }
 
-export function MarketsTracking() {
-  const { data, error, loading } = useMarkets();
+export function MarketsTracking({
+  data,
+  error,
+  loading,
+}: {
+  data: MarketsResponse | null;
+  error: string | null;
+  loading: boolean;
+}) {
+  const [showAll, setShowAll] = useState(false);
+
+  const groups = data?.groups ?? [];
+  const withPairs = groups.filter((g) => g.pairs.length > 0);
+  const withoutPairs = groups.length - withPairs.length;
+  const visible = showAll ? groups : withPairs;
 
   return (
     <>
@@ -106,26 +130,40 @@ export function MarketsTracking() {
         )}
       </div>
       <p className="field-desc" style={{ marginTop: -4 }}>
-        Every live ETH Up/Down market on Polymarket, grouped by the exact minute it resolves. Each
-        market resolves UP if ETH ends at or above <b>its own</b> “price to beat” (the Chainlink
-        price when its window opened) — so two same-expiry markets can price differently when their
-        strikes differ. <b>Price diff</b> = live ETH minus that market’s strike; the pair’s{" "}
-        <b>strike gap</b> is how far apart the two starting prices are. Prices via Pyth
-        (display-grade; resolution uses Chainlink).{" "}
-        {data
-          ? `Thresholds: spread ≥ ${pct(data.thresholds.minSpread)}, liquidity ≥ ${usd(
-              data.thresholds.minLiquidity,
-            )}, volume ≥ ${usd(data.thresholds.minVolume)}, bid-ask ≤ ${pct(
-              data.thresholds.maxBidAsk,
-            )} (${data.thresholds.source === "db" ? "set from dashboard" : "env defaults"}).`
-          : ""}
+        Live ETH Up/Down markets grouped by the exact minute they resolve — closest first, since
+        pairs form in the final overlap stretch. Each market resolves UP if ETH ends at or above{" "}
+        <b>its own</b> “price to beat”. <b>Price diff</b> = live ETH minus that strike. Prices via
+        Pyth (display-grade; resolution uses Chainlink).{" "}
+        {data &&
+          `Thresholds: spread ≥ ${pct(data.thresholds.minSpread)}, liquidity ≥ ${usd(
+            data.thresholds.minLiquidity,
+          )}, volume ≥ ${usd(data.thresholds.minVolume)}, bid-ask ≤ ${pct(
+            data.thresholds.maxBidAsk,
+          )} (${data.thresholds.source === "db" ? "set from dashboard" : "env defaults"}).`}
       </p>
       {error && <div className="notice error">Markets feed unavailable: {error}</div>}
       {loading && !data && <div className="empty">Loading live markets…</div>}
-      {data && data.groups.length === 0 && (
+      {data && groups.length === 0 && (
         <div className="empty">No open ETH Up/Down markets right now.</div>
       )}
-      {data?.groups.map((g) => <GroupBlock key={g.expiryAt} group={g} ethSpot={data.ethSpot} />)}
+      {data && groups.length > 0 && withoutPairs > 0 && (
+        <div className="controls" style={{ marginBottom: 4 }}>
+          <button className="btn" onClick={() => setShowAll((s) => !s)}>
+            {showAll
+              ? "Show only groups with pairs"
+              : `Show all groups (${withoutPairs} without pairs hidden)`}
+          </button>
+        </div>
+      )}
+      {data && groups.length > 0 && visible.length === 0 && (
+        <div className="empty">
+          No expiry group has a comparable pair right now — they appear when a shorter market’s
+          final stretch overlaps a longer one.
+        </div>
+      )}
+      {visible.map((g) => (
+        <GroupBlock key={g.expiryAt} group={g} ethSpot={data?.ethSpot ?? null} />
+      ))}
     </>
   );
 }

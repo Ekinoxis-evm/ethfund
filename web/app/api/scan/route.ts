@@ -14,6 +14,7 @@ import {
 import { sendAlert } from "@/lib/resend";
 import { loadThresholds } from "@/lib/settings";
 import { ethSpot, strikesFor } from "@/lib/polymarket/pyth";
+import { resolvePendingMarkets } from "@/lib/resolutions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,6 +54,7 @@ async function runScan(): Promise<ScanRunStats> {
     ]);
     await recordPairSnapshots(allEvals, { strikes, ethSpot: spot }); // never throws
   }
+  if (persist) await resolvePendingMarkets(); // backfill 'up'/'down' for expired windows; never throws
   for (const { opp } of opportunities) {
     if (!persist) continue;
     const { alreadyAlerted } = await upsertOpportunity(opp);

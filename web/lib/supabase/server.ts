@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { serverConfig } from "../config";
 import type { Evaluation, Opportunity } from "../polymarket/arbitrage";
-import type { SettingsChangeRow } from "../types";
+import type { PairWindowRow, SettingsChangeRow } from "../types";
 
 const ON_CONFLICT = "market_a_id,market_b_id,expiry_at";
 
@@ -148,6 +148,18 @@ export async function saveSettings(
   return { oldValues };
 }
 
+/** Per-window history rollup (expired windows only), newest first. */
+export async function listPairWindows(limit = 100): Promise<PairWindowRow[]> {
+  const { data, error } = await serviceClient()
+    .from("pair_windows")
+    .select("*")
+    .lt("expiry_at", new Date().toISOString())
+    .order("expiry_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`pair_windows select failed: ${error.message}`);
+  return (data ?? []) as PairWindowRow[];
+}
+
 export async function listSettingsChanges(limit = 50): Promise<SettingsChangeRow[]> {
   const { data, error } = await serviceClient()
     .from("settings_changes")
@@ -187,6 +199,10 @@ export async function recordPairSnapshots(
     price_to_beat_a: ctx?.strikes.get(opp.market_a_id) ?? null,
     price_to_beat_b: ctx?.strikes.get(opp.market_b_id) ?? null,
     eth_spot: ctx?.ethSpot ?? null,
+    yes_a: opp.yes_a,
+    yes_b: opp.yes_b,
+    no_a: opp.no_a,
+    no_b: opp.no_b,
   }));
   try {
     const { error } = await serviceClient().from("pair_snapshots").insert(rows);

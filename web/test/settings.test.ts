@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { signSession, verifySession, checkPasscode } from "../lib/auth";
 import { validateSettingsInput, loadThresholds } from "../lib/settings";
+import { classifySpread } from "../lib/spreadLogic";
 
 // auth.ts reads env lazily (inside each function), so setting these after import is safe.
 process.env.AUTH_SECRET = "test-secret";
@@ -89,6 +90,19 @@ test("validateSettingsInput rejects empty pairs and non-objects", () => {
   assert.equal(empty.ok, false);
   assert.equal(validateSettingsInput(null).ok, false);
   assert.equal(validateSettingsInput("nope").ok, false);
+});
+
+test("classifySpread: strike-consistent spreads are explained", () => {
+  // A's strike is $10 lower → A pricing UP higher is expected.
+  assert.equal(classifySpread(0.7, 0.55, 1750, 1760), "explained");
+  // Direction contradicts strikes: A has the HIGHER strike but prices UP higher.
+  assert.equal(classifySpread(0.7, 0.55, 1760, 1750), "anomaly");
+  // Same strike, material spread → anomaly (the Filladelfo case with gap ≈ 0).
+  assert.equal(classifySpread(0.6, 0.45, 1755.1, 1755.2), "anomaly");
+  // Tiny spread is noise regardless of strikes.
+  assert.equal(classifySpread(0.501, 0.499, 1700, 1800), "explained");
+  // Missing strikes with a material spread → unknown.
+  assert.equal(classifySpread(0.7, 0.55, null, 1760), "unknown");
 });
 
 test("loadThresholds falls back to env when the DB is not configured", async () => {
