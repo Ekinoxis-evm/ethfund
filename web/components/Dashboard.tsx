@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useOpportunities } from "@/hooks/useOpportunities";
 import { useMarkets } from "@/hooks/useMarkets";
 import type { OpportunityRow, ScanRunRow } from "@/lib/types";
+import { usd2 } from "@/lib/format";
 import { LiveBadge } from "./LiveBadge";
 import { OpportunityCard } from "./OpportunityCard";
 import { OpportunityTable } from "./OpportunityTable";
@@ -32,6 +33,9 @@ export function Dashboard({
           <span className="tag">ETH Up/Down · temporal mispricing signals</span>
         </div>
         <div className="nav">
+          {markets.data?.ethSpot != null && (
+            <span className="ethprice">ETH {usd2(markets.data.ethSpot)}</span>
+          )}
           <Link href="/settings">Settings</Link>
           <LiveBadge live={live} lastScan={lastScan} />
         </div>

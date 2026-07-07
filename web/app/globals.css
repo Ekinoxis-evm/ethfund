@@ -30,6 +30,18 @@ a { color: inherit; }
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px; margin-bottom: 8px; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 40;
+  background: rgba(10, 14, 23, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ethprice {
+  display: inline-flex; align-items: center;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 12px; font-size: 13px;
+  font-weight: 650; font-variant-numeric: tabular-nums; color: var(--green);
 }
 .brand { display: flex; align-items: baseline; gap: 10px; }
 .brand h1 { font-size: 22px; margin: 0; letter-spacing: -0.02em; }
