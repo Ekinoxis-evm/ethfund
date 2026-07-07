@@ -81,6 +81,9 @@ export interface PairItem {
   slugA: string;
   slugB: string;
   timeRemainingSec: number;
+  /** False while the leg's window hasn't opened — its price is a placeholder, spreads are noise. */
+  startedA: boolean;
+  startedB: boolean;
 }
 
 /** One compared window from history (pair_windows view + resolutions). */

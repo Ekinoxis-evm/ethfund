@@ -5,22 +5,26 @@ import { expiryLabel, pct, remaining, usd, usd2, usdSigned } from "@/lib/format"
 import { classifySpread, type SpreadVerdict } from "@/lib/spreadLogic";
 import type { MarketsResponse, PairItem } from "@/lib/types";
 
+type BoardVerdict = SpreadVerdict | "pre-start";
+
 interface BoardRow {
   expiryAt: string;
   p: PairItem;
-  verdict: SpreadVerdict;
+  verdict: BoardVerdict;
 }
 
 function rank(a: BoardRow, b: BoardRow): number {
-  const w = (v: SpreadVerdict) => (v === "anomaly" ? 0 : v === "unknown" ? 1 : 2);
+  const w = (v: BoardVerdict) =>
+    v === "anomaly" ? 0 : v === "unknown" ? 1 : v === "explained" ? 2 : 3;
   if (w(a.verdict) !== w(b.verdict)) return w(a.verdict) - w(b.verdict);
   return b.p.spread - a.p.spread;
 }
 
-const VERDICT_LABEL: Record<SpreadVerdict, string> = {
+const VERDICT_LABEL: Record<BoardVerdict, string> = {
   anomaly: "UNEXPLAINED",
   explained: "strike-explained",
   unknown: "strikes unknown",
+  "pre-start": "not started",
 };
 
 export function LivePairsBoard({ data }: { data: MarketsResponse | null }) {
@@ -29,11 +33,13 @@ export function LivePairsBoard({ data }: { data: MarketsResponse | null }) {
 
   const rows: BoardRow[] = (data?.groups ?? [])
     .flatMap((g) =>
-      g.pairs.map((p) => ({
-        expiryAt: g.expiryAt,
-        p,
-        verdict: classifySpread(p.upA, p.upB, p.strikeA, p.strikeB),
-      })),
+      g.pairs.map((p): BoardRow => {
+        const verdict: BoardVerdict =
+          !p.startedA || !p.startedB
+            ? "pre-start"
+            : classifySpread(p.upA, p.upB, p.strikeA, p.strikeB);
+        return { expiryAt: g.expiryAt, p, verdict };
+      }),
     )
     .filter((r) => !pairFilter || r.p.pair === pairFilter)
     .filter((r) => !onlyAnomalies || r.verdict === "anomaly")
@@ -102,7 +108,10 @@ export function LivePairsBoard({ data }: { data: MarketsResponse | null }) {
             </thead>
             <tbody>
               {rows.map(({ expiryAt, p, verdict }, i) => (
-                <tr key={`${p.pair}-${expiryAt}-${i}`}>
+                <tr
+                  key={`${p.pair}-${expiryAt}-${i}`}
+                  style={verdict === "pre-start" ? { opacity: 0.55 } : undefined}
+                >
                   <td>
                     <span className={`badge ${verdict === "anomaly" ? "fail" : ""}`}>
                       {VERDICT_LABEL[verdict]}
